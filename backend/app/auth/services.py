@@ -1,5 +1,5 @@
 from app.ml.noss import generate_voice_embedding
-from app.ml.speech import speech_to_text
+from app.ml.speech import transcribe_audio
 from app.auth.models import User
 from app.core.database import db
 from flask import current_app
@@ -7,7 +7,7 @@ import numpy as np
 
 def register_user(audio_path, form_data):
     # Convert speech to text
-    passphrase = speech_to_text(audio_path)
+    passphrase = transcribe_audio(audio_path)
     if not passphrase:
         return {"success": False, "message": "Speech recognition failed"}
     

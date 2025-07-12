@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 import os
 import wave
 from app.auth.services import register_user, authenticate_user
+from app.ml.speech import transcribe_audio
 from config import Config
 
 auth_bp = Blueprint('auth', __name__)
@@ -136,3 +137,45 @@ def login():
             "success": False,
             "message": f"Authentication failed: {str(e)}"
         }), 500
+
+@auth_bp.route('/api/register', methods=['POST'])
+def register_voice():
+    try:
+        file = request.files['file']
+        username = request.form.get('username')
+
+        if not file or not username:
+            return jsonify({'success': False, 'message': 'Missing file or username'}), 400
+
+        # Create temp directory if it doesn't exist
+        os.makedirs("temp_audio", exist_ok=True)
+        
+        file_path = f"temp_audio/{username}_sample.wav"
+        file.save(file_path)
+
+        print("Saved audio file at:", file_path)
+        print("File size:", os.path.getsize(file_path), "bytes")
+
+        # Validate WAV file (using the same validation as other endpoints)
+        is_valid, error_message = validate_wav_file(file_path)
+        if not is_valid:
+            safe_remove_file(file_path)
+            return jsonify({'success': False, 'message': error_message}), 400
+
+        # Transcribe audio
+        transcript = transcribe_audio(file_path)
+        print("Transcript:", transcript)
+
+        # Clean up the temporary file
+        safe_remove_file(file_path)
+
+        # Return passphrase to frontend
+        return jsonify({
+            'success': True,
+            'passphrase': transcript,
+            'message': 'Voice registered successfully'
+        }), 200
+
+    except Exception as e:
+        print("Registration failed:", str(e))
+        return jsonify({'success': False, 'message': 'Speech recognition failed'}), 400
