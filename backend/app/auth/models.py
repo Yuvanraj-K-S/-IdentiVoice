@@ -2,9 +2,8 @@ from app.core.database import db
 from datetime import datetime
 
 class User(db.Model):
-    id = db.Column(db.String(36), primary_key=True)
     fullname = db.Column(db.String(100), nullable=False)
-    email = db.Column(db.String(100), unique=True, nullable=False)
+    email = db.Column(db.String(100), primary_key=True, nullable=False)
     username = db.Column(db.String(50), unique=True, nullable=False)
     dob = db.Column(db.Date, nullable=False)
     passphrase = db.Column(db.String(200), nullable=False)

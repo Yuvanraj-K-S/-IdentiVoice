@@ -4,6 +4,7 @@ from app.auth.models import User
 from app.core.database import db
 from flask import current_app
 import numpy as np
+from datetime import datetime
 
 def register_user(audio_path, form_data):
     # Convert speech to text
@@ -23,13 +24,13 @@ def register_user(audio_path, form_data):
                 fullname=form_data['fullname'],
                 email=form_data['email'],
                 username=form_data['username'],
-                dob=form_data['dob'],
+                dob=datetime.strptime(form_data['dob'], "%Y-%m-%d").date(),
                 passphrase=passphrase,
                 voice_vector=voice_vector.tobytes()
             )
             db.session.add(user)
             db.session.commit()
-        
+            print("User added successfully")
         return {
             "success": True,
             "passphrase": passphrase,
@@ -48,7 +49,7 @@ def authenticate_user(audio_path, username):
                 return {"success": False, "message": "User not found"}
             
             # Convert speech to text
-            passphrase = speech_to_text(audio_path)
+            passphrase = transcribe_audio(audio_path)
             if not passphrase:
                 return {"success": False, "message": "Speech recognition failed"}
             
@@ -68,7 +69,7 @@ def authenticate_user(audio_path, username):
             # Compare with stored vector
             stored_vector = np.frombuffer(user.voice_vector, dtype=np.float32)
             similarity = calculate_similarity(current_vector, stored_vector)
-            
+            print(f"Simitarity:{similarity}")
             if similarity >= 0.75:
                 return {
                     "success": True,

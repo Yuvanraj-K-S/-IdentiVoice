@@ -1,13 +1,5 @@
 const API_BASE = 'http://localhost:5000/api';
 
-const fetchOptions = {
-    mode: 'cors',
-    credentials: 'include',
-    headers: {
-        'Accept': 'application/json'
-    }
-};
-
 const validateAudioBlob = async (blob) => {
     if (!blob) {
         throw new Error('No audio data available');
@@ -84,14 +76,27 @@ const validateAudioBlob = async (blob) => {
     }
 };
 
-export const registerVoice = async (audioBlob, userData) => {
+export const registerVoice = async (webmBlob, userData) => {
     try {
-        await validateAudioBlob(audioBlob);
-        
+        if (!webmBlob || webmBlob.size === 0) {
+            throw new Error('WebM audio blob is empty or invalid');
+        }
+        // Validate blobs
+        if (!(webmBlob instanceof Blob)) {
+            throw new Error('Invalid audio data format');
+        }
+
         const formData = new FormData();
-        formData.append('audio', audioBlob, 'recording.wav');
         
-        // Ensure all required fields are present and properly formatted
+        // Append audio files
+        // formData.append('wav_file', wavBlob, `${userData.username}_voice.wav`);
+        formData.append('webm_file', webmBlob, `${userData.username}_voice.webm`);
+        for (let [key, value] of formData.entries()) {
+            console.log(key, value instanceof Blob ? 
+                `${value.type} (${value.size} bytes)` : 
+                value);
+        }
+            // Append user data as separate fields (not stringified)
         const requiredFields = ['fullname', 'email', 'username', 'dob'];
         for (const field of requiredFields) {
             if (!userData[field]) {
@@ -99,37 +104,35 @@ export const registerVoice = async (audioBlob, userData) => {
             }
             formData.append(field, userData[field]);
         }
-        
+
         const response = await fetch(`${API_BASE}/register`, {
             method: 'POST',
             body: formData,
-            mode: 'cors',
             credentials: 'include'
         });
 
         if (!response.ok) {
-            const errorData = await response.json().catch(() => null);
-            throw new Error(errorData?.message || `Server error: ${response.status}`);
+            const error = await response.json().catch(() => null);
+            throw new Error(error?.message || 'Registration failed');
         }
-        
-        const data = await response.json();
-        return data;
+
+        return await response.json();
         
     } catch (err) {
         console.error('Registration error:', err);
         return { 
             success: false, 
-            message: err.message || 'Failed to register voice' 
+            message: err.message || 'Voice registration failed' 
         };
     }
-};
+};  
 
 export const loginVoice = async (audioBlob, username) => {
     try {
-        await validateAudioBlob(audioBlob);
+        // await validateAudioBlob(audioBlob);
         
         const formData = new FormData();
-        formData.append('audio', audioBlob, 'recording.wav');
+        formData.append('audio', audioBlob, 'recording.webm');
         formData.append('username', username);
         
         const response = await fetch(`${API_BASE}/login`, {

@@ -15,7 +15,7 @@ def transcribe_audio(audio_path, use_google=True):
         ValueError: If speech was unintelligible
         RuntimeError: If there's an API error or recognition service error
         Exception: For other unexpected errors
-    """
+    """    
     recognizer = sr.Recognizer()
     audio_file = None
     
