@@ -9,12 +9,11 @@ class NOSSModel:
         self.model = tf.saved_model.load(self.model_path)
         self.embedding_fn = self.model.signatures["serving_default"]
     
-    def preprocess_audio(self, audio_path, target_sr=16000, duration=5.0):
+    def preprocess_audio(self, audio_path, target_sr=16000, duration=10.0):
         """Load and preprocess audio file"""
         try:
             waveform, sr = librosa.load(audio_path, sr=target_sr)
             
-            # Trim or pad to 1 second
             target_length = int(target_sr * duration)
             if len(waveform) > target_length:
                 waveform = waveform[:target_length]

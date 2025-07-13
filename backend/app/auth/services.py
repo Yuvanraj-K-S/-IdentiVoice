@@ -5,6 +5,7 @@ from app.core.database import db
 from flask import current_app
 import numpy as np
 from datetime import datetime
+from scipy.spatial.distance import cosine
 
 def register_user(audio_path, form_data):
     # Convert speech to text
@@ -70,7 +71,7 @@ def authenticate_user(audio_path, username):
             stored_vector = np.frombuffer(user.voice_vector, dtype=np.float32)
             similarity = calculate_similarity(current_vector, stored_vector)
             print(f"Simitarity:{similarity}")
-            if similarity >= 0.75:
+            if similarity >= 0.4:
                 return {
                     "success": True,
                     "message": "Login successful",
@@ -86,8 +87,4 @@ def authenticate_user(audio_path, username):
         return {"success": False, "message": str(e)}
 
 def calculate_similarity(vec1, vec2):
-    # Normalize vectors
-    vec1 = vec1 / np.linalg.norm(vec1)
-    vec2 = vec2 / np.linalg.norm(vec2)
-    # Calculate cosine similarity
-    return np.dot(vec1, vec2)
+    return 1 - cosine(vec1, vec2) 
