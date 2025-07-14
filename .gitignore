@@ -1,0 +1,35 @@
+# Python bytecode and virtual environments
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+env/
+venv/
+.Python
+
+# Node.js dependencies
+node_modules/
+
+# Temporary audio recordings
+tempaudio/
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# IDE/editor folders and temp files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
+
+# Logs
+*.log
+
+# Build output
+dist/
+build/
