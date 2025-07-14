@@ -13,11 +13,12 @@ venv/
 node_modules/
 
 # Temporary audio recordings
-tempaudio/
+temp_audio/
 
 # OS-generated files
 .DS_Store
 Thumbs.db
+instance
 
 # IDE/editor folders and temp files
 .vscode/
