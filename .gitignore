@@ -1,0 +1,30 @@
+# Python cache and compiled files
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Node.js
+node_modules/
+
+# Custom folders
+temp_audio/
+
+# Environment files
+.env
+*.env
+
+# Virtual environment folders
+venv/
+env/
+
+# Logs
+*.log
+
+# Editor configs
+.vscode/
+.idea/
+
+# OS-generated junk
+.DS_Store
+Thumbs.db
