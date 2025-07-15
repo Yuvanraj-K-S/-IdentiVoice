@@ -104,8 +104,10 @@ def register_voice():
         
         wav_path = webm_to_wav(webm_path,username,timestamp)
         safe_remove_file(webm_path)
+        
         transcript = transcribe_audio(wav_path)
         print("Transcript:", transcript)
+        
         noss = generate_voice_embedding(wav_path)
         print(f"Voice Vector:{noss}")
         form_data = {}

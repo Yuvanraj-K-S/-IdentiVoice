@@ -1,30 +1,36 @@
-# Python cache and compiled files
-**/__pycache__/
-*.pyc
+# Python bytecode and virtual environments
+_pycache_/
+*.py[cod]
 *.pyo
 *.pyd
+*.so
+*.egg-info/
+env/
+venv/
+.Python
 
-# Node.js
+# Node.js dependencies
 node_modules/
 
-# Custom folders
+# Temporary audio recordings
 temp_audio/
 
-# Environment files
-.env
-*.env
+# OS-generated files
+.DS_Store
+Thumbs.db
+instance/
 
-# Virtual environment folders
-venv/
-env/
+# IDE/editor folders and temp files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+*.bak
 
 # Logs
 *.log
 
-# Editor configs
-.vscode/
-.idea/
-
-# OS-generated junk
-.DS_Store
-Thumbs.db
+# Build output
+dist/
+build/
