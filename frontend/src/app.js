@@ -2,12 +2,13 @@ import React, { useState, useEffect } from 'react';
 import AuthPanel from './components/AuthPanel';
 import VoiceRecorder from './components/VoiceRecorder';
 import './styles/main.css';
+import Mainpage from './components/Mainpage';
 
 console.log('App component file loaded');
 
 const App = () => {
     console.log('App component rendering');
-
+    const [isauthenticated, setisAuthenticated] = useState(false);
     const [mode, setMode] = useState('register');
     const [status, setStatus] = useState({ message: '', type: '' });
     const [userData, setUserData] = useState({
@@ -25,6 +26,8 @@ const App = () => {
     const handleStatus = (message, type) => {
         console.log('handleStatus called with:', message, type);
         setStatus({ message, type });
+        if (type === 'success' && mode==='login') {
+            setisAuthenticated(true);}
         setTimeout(() => setStatus({ message: '', type: '' }), 5000);
     };
 
@@ -35,6 +38,7 @@ const App = () => {
     }, [mode, userData, status]);
 
     return (
+        (!isauthenticated)?(
         <div className="container">
             <div className="header">
                 <h1><i className="fas fa-microphone-alt"></i> IdentiVoice</h1>
@@ -62,6 +66,9 @@ const App = () => {
                 <p>IdentiVoice &copy; 2025 - Your voice is your password</p>
             </div>
         </div>
+        ):(
+            <Mainpage/>
+        )
     );
 };
 
