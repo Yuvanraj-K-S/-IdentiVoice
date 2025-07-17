@@ -71,6 +71,7 @@
 
                 mediaRecorder.onstop = async () => {
                     try {
+
                         const webmBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
                         setRawBlob(webmBlob);
 
@@ -131,10 +132,10 @@
                 }
                 if (mediaRecorderRef.current?.state === 'recording') {
                     mediaRecorderRef.current.stop();
-                } else {
-                    // If not recording, still clean up
-                    cleanupRecording();
-                }
+                } //else {
+                //     // If not recording, still clean up
+                //     cleanupRecording();
+                // }
             } catch (err) {
                 console.error('Error stopping recording:', err);
                 handleStatus('Error stopping recording. Try again.', 'error');

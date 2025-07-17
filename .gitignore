@@ -24,7 +24,7 @@ temp_audio/
 # OS-generated files
 .DS_Store
 Thumbs.db
-instance/
+backend/instance/
 
 # IDE/editor folders and temp files
 .vscode/

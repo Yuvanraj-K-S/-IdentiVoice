@@ -36,9 +36,9 @@ const App = () => {
     };
 
     useEffect(() => {
-        console.log('Current mode:', mode);
-        console.log('Current userData:', userData);
-        console.log('Current status:', status);
+        // console.log('Current mode:', mode);
+        // console.log('Current userData:', userData);
+        // console.log('Current status:', status);
     }, [mode, userData, status]);
 
     return (
