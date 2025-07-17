@@ -1,5 +1,5 @@
 # Python bytecode and virtual environments
-_pycache_/
+__pycache__/
 *.py[cod]
 *.pyo
 *.pyd
@@ -8,12 +8,18 @@ _pycache_/
 env/
 venv/
 .Python
-app\static\uploads
+
 # Node.js dependencies
-node_modules/
+frontend/node_modules/
+
+# Ignore all uploads (including subfolders and files)
+app/static/uploads/
 
 # Temporary audio recordings
 temp_audio/
+*.wav
+*.swn
+*.bak
 
 # OS-generated files
 .DS_Store
@@ -36,12 +42,6 @@ instance/
 .env.development.local
 .env.test.local
 .env.production.local
-
-# Temporary files
-temp_audio/
-*.wav
-*.swn
-*.bak
 
 # Logs
 *.log
