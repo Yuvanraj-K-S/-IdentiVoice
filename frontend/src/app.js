@@ -41,7 +41,7 @@ const App = () => {
         (!isauthenticated)?(
         <div className="container">
             <div className="header">
-                <h1><i className="fas fa-microphone-alt"></i> VoicePass</h1>
+                <h1><i className="fas fa-microphone-alt"></i> IdentiVoice</h1>
                 <p>Secure authentication using your unique voice signature</p>
             </div>
 
@@ -63,7 +63,7 @@ const App = () => {
 
             <div className="footer">
                 <p>Powered by Google NOSS technology and Python SpeechRecognition</p>
-                <p>VoicePass &copy; 2023 - Your voice is your password</p>
+                <p>IdentiVoice &copy; 2025 - Your voice is your password</p>
             </div>
         </div>
         ):(
