@@ -1,4 +1,4 @@
-    // Modified VoiceRecorder.js with proper WAV encoding and cleanup handling
+// Modified VoiceRecorder.js with proper WAV encoding and cleanup handling
     import React, { useState, useEffect, useRef } from 'react';
     import { registerVoice, loginVoice } from '../utils/api';
     
@@ -126,8 +126,14 @@
 
         const stopRecording = () => {
             try {
+                if (countdownRef.current) {
+                    clearInterval(countdownRef.current);
+                }
                 if (mediaRecorderRef.current?.state === 'recording') {
                     mediaRecorderRef.current.stop();
+                } else {
+                    // If not recording, still clean up
+                    cleanupRecording();
                 }
             } catch (err) {
                 console.error('Error stopping recording:', err);

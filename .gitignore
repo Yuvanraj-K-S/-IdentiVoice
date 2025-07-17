@@ -23,7 +23,6 @@ build/
 .idea/
 *.swp
 *.swo
-<<<<<<< HEAD
 
 # Database files
 *.db
@@ -39,14 +38,3 @@ build/
 # Temporary files
 temp_audio/
 *.wav
-=======
-*.swn
-*.bak
-
-# Logs
-*.log
-
-# Build output
-dist/
-build/
->>>>>>> 136f1c57f2e90df75e2ab4fa11171ffdc9f69413
