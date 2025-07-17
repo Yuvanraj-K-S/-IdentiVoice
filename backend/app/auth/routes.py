@@ -133,3 +133,6 @@ def register_voice():
         if 'wav_path' in locals() and os.path.exists(wav_path):
             safe_remove_file(wav_path)
         return jsonify({'success': False, 'message': 'Registration process failed'}), 500
+    
+
+

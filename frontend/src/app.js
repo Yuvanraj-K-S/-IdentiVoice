@@ -31,6 +31,10 @@ const App = () => {
         setTimeout(() => setStatus({ message: '', type: '' }), 5000);
     };
 
+    const handleLogout = () => {
+        setisAuthenticated(false);
+    };
+
     useEffect(() => {
         console.log('Current mode:', mode);
         console.log('Current userData:', userData);
@@ -67,7 +71,7 @@ const App = () => {
             </div>
         </div>
         ):(
-            <Mainpage/>
+            <Mainpage onLogout={handleLogout} />
         )
     );
 };

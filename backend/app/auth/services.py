@@ -71,7 +71,7 @@ def authenticate_user(audio_path, username):
             stored_vector = np.frombuffer(user.voice_vector, dtype=np.float32)
             similarity = calculate_similarity(current_vector, stored_vector)
             print(f"Simitarity:{similarity}")
-            if similarity >= 0.4:
+            if similarity >= 0.2:
                 return {
                     "success": True,
                     "message": "Login successful",

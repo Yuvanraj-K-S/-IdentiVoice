@@ -33,7 +33,7 @@ def transcribe_audio(audio_path, use_google=True):
         else:
             # Could add support for other recognizers here
             text = recognizer.recognize_google(audio_data)  # Default to Google
-            
+        print(f"Transcribed text: {text}")
         return text
         
     except sr.UnknownValueError:
