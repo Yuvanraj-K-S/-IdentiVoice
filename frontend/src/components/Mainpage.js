@@ -1,18 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useSpeechRecognition } from 'react-speech-recognition';
+import { sendCommand } from '../utils/api';
 import '../styles/main.css';
 
 const Mainpage = ({ onLogout }) => {
   const [isListening, setIsListening] = useState(false);
   const [assistantResponse, setAssistantResponse] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [commandHistory, setCommandHistory] = useState([]);
   const synthRef = useRef(window.speechSynthesis);
 
   const handleAssistantResponse = (text) => {
     setAssistantResponse(text);
     speakText(text);
-    setCommandHistory(prev => [...prev, { type: 'response', content: text }]);
   };
 
   const speakText = (text) => {
@@ -27,110 +25,27 @@ const Mainpage = ({ onLogout }) => {
     synthRef.current.speak(utterance);
   };
 
-  const startListening = () => {
+  const startListening = async () => {
     setIsListening(true);
-    resetTranscript();
-    setCommandHistory(prev => [...prev, { type: 'command', content: 'Listening...' }]);
+    setAssistantResponse('Listening...');
+    const response = await sendCommand('start');
+    if (response.success) {
+      handleAssistantResponse(response.message);
+    } else {
+      handleAssistantResponse(response.message || 'Error starting assistant');
+    }
   };
 
-  const stopListening = () => {
+  const stopListening = async () => {
     setIsListening(false);
-    if (transcript) {
-      setCommandHistory(prev => [
-        ...prev.filter(item => item.content !== 'Listening...'),
-        { type: 'command', content: transcript }
-      ]);
+    setAssistantResponse('');
+    const response = await sendCommand('stop');
+    if (response.success) {
+      handleAssistantResponse(response.message);
+    } else {
+      handleAssistantResponse(response.message || 'Error stopping assistant');
     }
   };
-
-  const commands = [
-    {
-      command: ['hello', 'hi', 'hey'],
-      callback: () => handleAssistantResponse("Hello! How can I help you today?")
-    },
-    {
-      command: 'what time is it',
-      callback: () => {
-        const time = new Date().toLocaleTimeString();
-        handleAssistantResponse(`The current time is ${time}`);
-      }
-    },
-    {
-      command: 'open *',
-      callback: (site) => {
-        const validSites = {
-          'youtube': 'https://youtube.com',
-          'google': 'https://google.com',
-          'stackoverflow': 'https://stackoverflow.com',
-          'wikipedia': 'https://wikipedia.com'
-        };
-        if (validSites[site.toLowerCase()]) {
-          window.open(validSites[site.toLowerCase()], '_blank');
-          handleAssistantResponse(`Opening ${site}`);
-        } else {
-          handleAssistantResponse(`I don't know how to open ${site}`);
-        }
-      }
-    },
-    {
-      command: 'search for *',
-      callback: (query) => {
-        window.open(`https://google.com/search?q=${encodeURIComponent(query)}`, '_blank');
-        handleAssistantResponse(`Searching for ${query}`);
-      }
-    },
-    {
-      command: 'tell me a joke',
-      callback: () => {
-        const jokes = [
-          "Why don't scientists trust atoms? Because they make up everything!",
-          "What did one ocean say to the other ocean? Nothing, they just waved!",
-          "Why did the scarecrow win an award? Because he was outstanding in his field!",
-          "I'm reading a book about anti-gravity. It's impossible to put down!",
-          "Did you hear about the mathematician who's afraid of negative numbers? He'll stop at nothing to avoid them!"
-        ];
-        const joke = jokes[Math.floor(Math.random() * jokes.length)];
-        handleAssistantResponse(joke);
-      }
-    },
-    {
-      command: 'who are you',
-      callback: () => handleAssistantResponse("I'm your voice assistant, created to help you with tasks and information")
-    },
-    {
-      command: 'what can you do',
-      callback: () => handleAssistantResponse("I can search the web, tell you jokes, give you the time, open websites, and much more. Just ask!")
-    },
-    // Uncomment below if you want to enable logout
-    // {
-    //   command: 'logout',
-    //   callback: () => {
-    //     handleAssistantResponse("Logging out. Goodbye!");
-    //     setTimeout(() => onLogout(), 2000);
-    //   }
-    // },
-    {
-      command: 'stop',
-      callback: () => {
-        setIsListening(false);
-        handleAssistantResponse("Stopped listening");
-      }
-    }
-  ];
-
-  const { transcript, resetTranscript, browserSupportsSpeechRecognition } = useSpeechRecognition({ commands });
-
-  useEffect(() => {
-    if (transcript && isListening) {
-      setCommandHistory(prev => {
-        const lastItem = prev[prev.length - 1];
-        if (lastItem && lastItem.type === 'command' && lastItem.content === 'Listening...') {
-          return [...prev.slice(0, -1), { type: 'command', content: transcript }];
-        }
-        return [...prev, { type: 'command', content: transcript }];
-      });
-    }
-  }, [transcript, isListening]);
 
   useEffect(() => {
     const hour = new Date().getHours();
@@ -143,10 +58,6 @@ const Mainpage = ({ onLogout }) => {
     speakText(welcomeMessage);
     // eslint-disable-next-line
   }, []);
-
-  if (!browserSupportsSpeechRecognition) {
-    return <div className="error">Browser doesn't support speech recognition.</div>;
-  }
 
   return (
     <div className="assistant-container">
@@ -167,23 +78,6 @@ const Mainpage = ({ onLogout }) => {
       </div>
 
       <div className="assistant-main">
-        <div className="command-history">
-          {commandHistory.map((item, index) => (
-            <div
-              key={index}
-              className={`command-item ${item.type}`}
-            >
-              <div className="command-icon">
-                {item.type === 'command' ?
-                  <i className="fas fa-user"></i> :
-                  <i className="fas fa-robot"></i>
-                }
-              </div>
-              <div className="command-content">{item.content}</div>
-            </div>
-          ))}
-        </div>
-
         <div className="assistant-response">
           {isSpeaking ? (
             <div className="voice-wave">
@@ -204,16 +98,6 @@ const Mainpage = ({ onLogout }) => {
       </div>
 
       <div className="assistant-footer">
-        <div className="quick-commands">
-          <h3>Try saying:</h3>
-          <div className="command-chips">
-            <span>"What time is it?"</span>
-            <span>"Open YouTube"</span>
-            <span>"Search for React tutorials"</span>
-            <span>"Tell me a joke"</span>
-            <span>"What can you do?"</span>
-          </div>
-        </div>
         <p>Powered by React Speech Recognition and Web Speech API</p>
       </div>
     </div>

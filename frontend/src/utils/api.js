@@ -158,3 +158,28 @@ export const loginVoice = async (audioBlob, username) => {
         };
     }
 };
+
+export const sendCommand = async (command) => {
+    try {
+        const response = await fetch(`${API_BASE}/command`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ command }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            throw new Error(errorData?.message || `Server error: ${response.status}`);
+        }
+
+        return await response.json();
+    } catch (err) {
+        console.error('Command error:', err);
+        return {
+            success: false,
+            message: err.message || 'Failed to send command',
+        };
+    }
+};
