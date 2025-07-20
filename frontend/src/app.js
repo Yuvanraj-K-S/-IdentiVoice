@@ -1,10 +1,18 @@
 // src/App.js
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import {
+    BrowserRouter as Router,
+    Routes,
+    Route,
+    useNavigate,
+    Navigate
+} from 'react-router-dom';
 
 import AuthPanel from './components/AuthPanel';
 import VoiceRecorder from './components/VoiceRecorder';
 import Mainpage from './components/Mainpage';
+// You can add more pages like SettingsPage, DashboardPage, etc.
+
 import './styles/main.css';
 
 const AuthPage = ({ mode, setMode, status, userData, setUserData, handleStatus }) => (
@@ -49,20 +57,79 @@ const AppWrapper = () => {
     });
 
     const navigate = useNavigate();
+    const logoutTimer = useRef(null);
+    const AUTO_LOGOUT_TIME = 5 * 60 * 1000;
+
+    const resetLogoutTimer = () => {
+        if (logoutTimer.current) clearTimeout(logoutTimer.current);
+        logoutTimer.current = setTimeout(() => {
+            handleLogout('Session expired due to inactivity');
+        }, AUTO_LOGOUT_TIME);
+    };
 
     const handleStatus = (message, type) => {
         setStatus({ message, type });
+
         if (type === 'success' && mode === 'login') {
+            const loginData = { timestamp: Date.now() };
+            localStorage.setItem('loginData', JSON.stringify(loginData));
             setIsAuthenticated(true);
-            navigate('/main');
+            navigate('/main'); // go to main after login
+            resetLogoutTimer();
         }
+
         setTimeout(() => setStatus({ message: '', type: '' }), 5000);
     };
 
-    const handleLogout = () => {
+    const handleLogout = (message = 'Logged out successfully') => {
         setIsAuthenticated(false);
+        localStorage.removeItem('loginData');
+        clearTimeout(logoutTimer.current);
         navigate('/');
+        setStatus({ message, type: 'info' });
     };
+
+    useEffect(() => {
+        const loginData = JSON.parse(localStorage.getItem('loginData'));
+        if (loginData) {
+            const { timestamp } = loginData;
+            const now = Date.now();
+            if (now - timestamp < AUTO_LOGOUT_TIME) {
+                setIsAuthenticated(true);
+                navigate('/main');
+                resetLogoutTimer();
+            } else {
+                localStorage.removeItem('loginData');
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        const activityEvents = ['mousemove', 'keydown', 'click', 'touchstart'];
+        const resetTimerOnActivity = () => {
+            if (isAuthenticated) {
+                localStorage.setItem('loginData', JSON.stringify({ timestamp: Date.now() }));
+                resetLogoutTimer();
+            }
+        };
+
+        activityEvents.forEach(event =>
+            window.addEventListener(event, resetTimerOnActivity)
+        );
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                resetTimerOnActivity();
+            }
+        });
+
+        return () => {
+            activityEvents.forEach(event =>
+                window.removeEventListener(event, resetTimerOnActivity)
+            );
+            document.removeEventListener('visibilitychange', resetTimerOnActivity);
+            clearTimeout(logoutTimer.current);
+        };
+    }, [isAuthenticated]);
 
     return (
         <Routes>
@@ -91,6 +158,9 @@ const AppWrapper = () => {
                         : <Navigate to="/" />
                 }
             />
+            {/* Placeholder for future routes */}
+            {/* <Route path="/settings" element={<SettingsPage />} /> */}
+            {/* <Route path="/dashboard" element={<DashboardPage />} /> */}
         </Routes>
     );
 };
