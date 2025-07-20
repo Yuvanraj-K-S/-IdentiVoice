@@ -9,6 +9,8 @@ from datetime import datetime
 from pydub import AudioSegment 
 from app.ml.noss import generate_voice_embedding
 from app.auth.services import register_user
+from app.assistant import process_command
+import speech_recognition as sr
 
 auth_bp = Blueprint('auth', __name__)
             
@@ -135,5 +137,45 @@ def register_voice():
             safe_remove_file(wav_path)
         return jsonify({'success': False, 'message': 'Registration process failed'}), 500
     
-
-
+@auth_bp.route('/voice_command', methods=['POST'])
+def voice_command():
+    if 'audio' not in request.files:
+        return jsonify({"success": False, "message": "No audio file"}), 400
+    
+    audio_file = request.files['audio']
+    filename = secure_filename(audio_file.filename)
+    audio_path = os.path.join(Config.UPLOAD_FOLDER, filename)
+    audio_file.save(audio_path)
+    
+    try:
+        # Convert to WAV if needed
+        if audio_path.endswith('.webm'):
+            wav_path = webm_to_wav(audio_path, "command", datetime.now().strftime("%Y%m%d_%H%M%S"))
+            os.remove(audio_path)
+            audio_path = wav_path
+        
+        # Transcribe audio
+        r = sr.Recognizer()
+        with sr.AudioFile(audio_path) as source:
+            audio = r.record(source)
+        text = r.recognize_google(audio)
+        
+        # Process command
+        result = process_command(text)
+        
+        os.remove(audio_path)
+        return jsonify({
+            "success": True,
+            "response": result['response'],
+            "action": result.get('action'),
+            "url": result.get('url'),
+            "query": result.get('query')
+        })
+    except Exception as e:
+        print(f"Command processing error: {str(e)}")
+        if os.path.exists(audio_path):
+            os.remove(audio_path)
+        return jsonify({
+            "success": False,
+            "message": f"Command processing failed: {str(e)}"
+        }), 500

@@ -183,3 +183,29 @@ export const sendCommand = async (command) => {
         };
     }
 };
+
+export const sendVoiceCommand = async (audioBlob) => {
+  try {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'command.webm');
+    
+    const response = await fetch(`${API_BASE}/voice_command`, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include'
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => null);
+      throw new Error(errorData?.message || 'Command processing failed');
+    }
+    
+    return await response.json();
+  } catch (err) {
+    console.error('Voice command error:', err);
+    return { 
+      success: false, 
+      message: err.message || 'Failed to process voice command' 
+    };
+  }
+};

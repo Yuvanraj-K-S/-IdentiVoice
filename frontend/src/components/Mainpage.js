@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import '../styles/main.css';
+import { sendVoiceCommand } from '../utils/api';
 
 const Mainpage = ({ onLogout }) => {
   const [assistantResponse, setAssistantResponse] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [commandHistory, setCommandHistory] = useState([]);
+  const [isRecording, setIsRecording] = useState(false);
   const synthRef = useRef(window.speechSynthesis);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   const {
     transcript,
@@ -14,6 +18,65 @@ const Mainpage = ({ onLogout }) => {
     listening: isListening,
     browserSupportsSpeechRecognition
   } = useSpeechRecognition();
+
+  // Set up media recorder on component mount
+  useEffect(() => {
+    if (!browserSupportsSpeechRecognition) return;
+
+    const setupMediaRecorder = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorderRef.current = new MediaRecorder(stream);
+        
+        mediaRecorderRef.current.ondataavailable = (event) => {
+          audioChunksRef.current.push(event.data);
+        };
+        
+        mediaRecorderRef.current.onstop = async () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          audioChunksRef.current = [];
+          
+          // Send to backend
+          const result = await sendVoiceCommand(audioBlob);
+          
+          if (result.success) {
+            setAssistantResponse(result.response);
+            speakText(result.response);
+            
+            setCommandHistory(prev => [
+              ...prev.filter(item => item.content !== 'Listening...'),
+              { type: 'command', content: transcript },
+              { type: 'response', content: result.response }
+            ]);
+            
+            // Handle actions
+            if (result.action === 'open' && result.url) {
+              window.open(result.url, '_blank');
+            } else if (result.action === 'search' && result.query) {
+              window.open(`https://google.com/search?q=${encodeURIComponent(result.query)}`, '_blank');
+            } else if (result.action === 'logout') {
+              setTimeout(() => onLogout(), 2000);
+            }
+          } else {
+            const errorMsg = result.message || "Command processing failed";
+            setAssistantResponse(errorMsg);
+            speakText(errorMsg);
+          }
+        };
+      } catch (err) {
+        console.error("Media recorder setup failed:", err);
+        setAssistantResponse("Microphone access is required for voice commands");
+      }
+    };
+    
+    setupMediaRecorder();
+    
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, [browserSupportsSpeechRecognition]);
 
   const speakText = (text) => {
     if (synthRef.current.speaking) {
@@ -28,57 +91,18 @@ const Mainpage = ({ onLogout }) => {
     synthRef.current.speak(utterance);
   };
 
-  const fetchAssistantResponse = async (commandText) => {
-    try {
-      const response = await fetch('http://localhost:5000/assistant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: commandText })
-      });
-      
-      if (!response.ok) throw new Error('Network response was not ok');
-      
-      const data = await response.json();
-      setAssistantResponse(data.response);
-      speakText(data.response);
-      setCommandHistory(prev => [
-        ...prev.filter(item => item.content !== 'Listening...'),
-        { type: 'command', content: commandText },
-        { type: 'response', content: data.response }
-      ]);
-
-      // Handle special actions from backend
-      if (data.action === 'open' && data.url) {
-        window.open(data.url, '_blank');
-      } else if (data.action === 'search' && data.query) {
-        window.open(`https://google.com/search?q=${encodeURIComponent(data.query)}`, '_blank');
-      } else if (data.action === 'logout') {
-        setTimeout(() => onLogout(), 2000);
-      }
-
-    } catch (error) {
-      console.error("Error talking to assistant:", error);
-      const errorMsg = "Sorry, there was a problem contacting the assistant.";
-      setAssistantResponse(errorMsg);
-      speakText(errorMsg);
-    }
-  };
-
   const startListening = () => {
     resetTranscript();
-    SpeechRecognition.startListening();
+    SpeechRecognition.startListening({ continuous: true });
+    mediaRecorderRef.current?.start();
+    setIsRecording(true);
     setCommandHistory(prev => [...prev, { type: 'status', content: 'Listening...' }]);
   };
 
   const stopListening = () => {
     SpeechRecognition.stopListening();
-    if (transcript.trim()) {
-      fetchAssistantResponse(transcript);
-    } else {
-      setCommandHistory(prev => prev.filter(item => item.content !== 'Listening...'));
-      setAssistantResponse("I didn't catch that. Could you try again?");
-    }
-    resetTranscript();
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
   };
 
   useEffect(() => {
@@ -94,6 +118,26 @@ const Mainpage = ({ onLogout }) => {
     setAssistantResponse(welcomeMessage);
     speakText(welcomeMessage);
   }, [browserSupportsSpeechRecognition]);
+
+  // Update transcript in real-time
+  useEffect(() => {
+    if (isRecording && transcript) {
+      setCommandHistory(prev => {
+        const newHistory = [...prev];
+        const listeningIndex = newHistory.findIndex(item => item.content === 'Listening...');
+        
+        if (listeningIndex !== -1) {
+          newHistory[listeningIndex] = { 
+            type: 'command', 
+            content: transcript,
+            provisional: true
+          };
+        }
+        
+        return newHistory;
+      });
+    }
+  }, [transcript, isRecording]);
 
   if (!browserSupportsSpeechRecognition) {
     return (
@@ -116,14 +160,20 @@ const Mainpage = ({ onLogout }) => {
         <h1><i className="fas fa-microphone-alt"></i> Voice Assistant</h1>
         <div className="assistant-controls">
           <button
-            className={`btn ${isListening ? 'btn-danger' : 'btn-primary'}`}
-            onClick={isListening ? stopListening : startListening}
+            className={`btn ${isRecording ? 'btn-danger' : 'btn-primary'}`}
+            onClick={isRecording ? stopListening : startListening}
             disabled={isSpeaking}
           >
-            <i className={`fas ${isListening ? 'fa-stop' : 'fa-microphone'}`}></i>
-            {isListening ? ' Stop Listening' : ' Start Assistant'}
+            <i className={`fas ${isRecording ? 'fa-stop' : 'fa-microphone'}`}></i>
+            {isRecording ? ' Stop Recording' : ' Start Assistant'}
           </button>
-          <button className="btn btn-secondary" onClick={onLogout}>
+          <button 
+            className="btn btn-secondary" 
+            onClick={(e) => {
+              e.preventDefault();
+              onLogout();
+            }}
+          >
             <i className="fas fa-sign-out-alt"></i> Logout
           </button>
         </div>
@@ -155,6 +205,7 @@ const Mainpage = ({ onLogout }) => {
               <li key={index} className={item.type}>
                 {item.type === 'command' && <><i className="fas fa-user"></i> You: </>}
                 {item.type === 'response' && <><i className="fas fa-robot"></i> Assistant: </>}
+                {item.type === 'status' && <><i className="fas fa-circle-notch fa-spin"></i> </>}
                 {item.content}
               </li>
             ))}
