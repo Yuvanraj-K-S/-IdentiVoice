@@ -56,6 +56,7 @@ def authenticate_user(audio_path, username):
             
             # Verify passphrase
             if passphrase != user.passphrase:
+                print(f"User passphrase: {user.passphrase}")
                 return {
                     "success": False,
                     "message": "Passphrase does not match",
